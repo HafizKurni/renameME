@@ -17,11 +17,26 @@ def process_and_rename_zip(uploaded_zip, new_names_list):
         with zipfile.ZipFile(uploaded_zip, 'r') as input_zip, \
              zipfile.ZipFile(output_buffer, 'w', zipfile.ZIP_DEFLATED) as output_zip:
 
-            # Get the list of original files in the zip, sorted for consistent renaming
-            original_files = sorted(input_zip.namelist())
+            # Get the list of original files in the zip
+            original_files = input_zip.namelist()
             
             # Filter out any directory entries from the file list
             original_files = [f for f in original_files if not f.endswith('/')]
+            
+            # --- MODIFIED: Sort files numerically instead of alphabetically ---
+            # This ensures that files like '10.jpg' don't come before '2.jpg'.
+            # We extract the number from the filename (e.g., '10' from '10.jpg')
+            # and use it as the key for sorting.
+            def get_number(filename):
+                try:
+                    name, _ = os.path.splitext(filename)
+                    return int(name)
+                except ValueError:
+                    # If the filename isn't a number (e.g., 'image.jpg'),
+                    # return a large number to put it at the end.
+                    return float('inf')
+
+            original_files.sort(key=get_number)
             
             # Check if the number of new names matches the number of files
             if len(original_files) != len(new_names_list):
@@ -125,5 +140,3 @@ if st.button("Start Renaming"):
             st.success("Your files have been successfully renamed and are ready for download!")
     else:
         st.warning("Please upload a ZIP file and provide a list of new names to start renaming.")
-
-
